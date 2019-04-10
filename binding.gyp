@@ -83,7 +83,8 @@
             '<!@(pkg-config --libs Magick++)',
           ],
           'cflags': [
-            '<!@(pkg-config --cflags Magick++)'
+            '<!@(pkg-config --cflags Magick++)',
+            '-Wdeprecated-declarations'
           ],
         }]
       ]

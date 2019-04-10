@@ -297,7 +297,7 @@ void DoConvert(uv_work_t* req) {
         ssize_t option_info = MagickCore::ParseCommandOption(MagickCore::MagickFilterOptions, Magick::MagickFalse, filter);
         if (option_info != -1) {
             if (debug) printf( "filter: %s\n", filter );
-            image.filterType( (Magick::FilterTypes)option_info );
+            image.filterType( (Magick::FilterType)option_info );
         }
         else {
             context->error = std::string("filter not supported");
@@ -362,7 +362,7 @@ void DoConvert(uv_work_t* req) {
             }
 
             if (debug) printf( "resize to: %d, %d\n", resizewidth, resizeheight );
-            Magick::Geometry resizeGeometry( resizewidth, resizeheight, 0, 0, 0, 0 );
+            Magick::Geometry resizeGeometry( resizewidth, resizeheight, 0, 0 );
             try {
                 image.zoom( resizeGeometry );
             }
@@ -380,13 +380,13 @@ void DoConvert(uv_work_t* req) {
             if ( strcmp ( gravity, "None" ) != 0 ) {
                 // limit canvas size to cropGeometry
                 if (debug) printf( "crop to: %d, %d, %d, %d\n", width, height, xoffset, yoffset );
-                Magick::Geometry cropGeometry( width, height, xoffset, yoffset, 0, 0 );
+                Magick::Geometry cropGeometry( width, height, xoffset, yoffset );
 
                 Magick::Color transparent( "transparent" );
                 if ( strcmp( context->format.c_str(), "PNG" ) == 0 ) {
                     // make background transparent for PNG
                     // JPEG background becomes black if set transparent here
-                    transparent.alpha( 1. );
+                    transparent.quantumAlpha( 1. );
                 }
 
                 #if MagickLibVersion > 0x654
@@ -446,13 +446,13 @@ void DoConvert(uv_work_t* req) {
 
              // limit canvas size to cropGeometry
              if (debug) printf( "crop to: %d, %d, %d, %d\n", width, height, xoffset, yoffset );
-             Magick::Geometry cropGeometry( width, height, xoffset, yoffset, 0, 0 );
+             Magick::Geometry cropGeometry( width, height, xoffset, yoffset );
 
              Magick::Color transparent( "transparent" );
              if ( strcmp( context->format.c_str(), "PNG" ) == 0 ) {
                  // make background transparent for PNG
                  // JPEG background becomes black if set transparent here
-                 transparent.alpha( 1. );
+                 transparent.quantumAlpha( 1. );
              }
 
              #if MagickLibVersion > 0x654
@@ -491,7 +491,7 @@ void DoConvert(uv_work_t* req) {
     }
 
     if (context->density) {
-        image.density(Magick::Geometry(context->density, context->density));
+        image.density(Magick::Point(context->density, context->density));
     }
 
     if( context->colorspace != Magick::UndefinedColorspace ){
@@ -600,21 +600,21 @@ NAN_METHOD(Convert) {
     convert_im_ctx* context = new convert_im_ctx();
     context->srcData = Buffer::Data(srcData);
     context->length = Buffer::Length(srcData);
-    context->debug = obj->Get( Nan::New<String>("debug").ToLocalChecked() )->Uint32Value();
-    context->ignoreWarnings = obj->Get( Nan::New<String>("ignoreWarnings").ToLocalChecked() )->Uint32Value();
-    context->maxMemory = obj->Get( Nan::New<String>("maxMemory").ToLocalChecked() )->Uint32Value();
-    context->width = obj->Get( Nan::New<String>("width").ToLocalChecked() )->Uint32Value();
-    context->height = obj->Get( Nan::New<String>("height").ToLocalChecked() )->Uint32Value();
-    context->xoffset = obj->Get( Nan::New<String>("xoffset").ToLocalChecked() )->Uint32Value();
-    context->yoffset = obj->Get( Nan::New<String>("yoffset").ToLocalChecked() )->Uint32Value();
-    context->quality = obj->Get( Nan::New<String>("quality").ToLocalChecked() )->Uint32Value();
-    context->rotate = obj->Get( Nan::New<String>("rotate").ToLocalChecked() )->Int32Value();
-    context->flip = obj->Get( Nan::New<String>("flip").ToLocalChecked() )->Uint32Value();
-    context->density = obj->Get( Nan::New<String>("density").ToLocalChecked() )->Int32Value();
+    context->debug = obj->Get( Nan::New<String>("debug").ToLocalChecked() ).As<Uint32>()->Value();
+    context->ignoreWarnings = obj->Get( Nan::New<String>("ignoreWarnings").ToLocalChecked() ).As<Uint32>()->Value();
+    context->maxMemory = obj->Get( Nan::New<String>("maxMemory").ToLocalChecked() ).As<Uint32>()->Value();
+    context->width = obj->Get( Nan::New<String>("width").ToLocalChecked() ).As<Uint32>()->Value();
+    context->height = obj->Get( Nan::New<String>("height").ToLocalChecked() ).As<Uint32>()->Value();
+    context->xoffset = obj->Get( Nan::New<String>("xoffset").ToLocalChecked() ).As<Uint32>()->Value();
+    context->yoffset = obj->Get( Nan::New<String>("yoffset").ToLocalChecked() ).As<Uint32>()->Value();
+    context->quality = obj->Get( Nan::New<String>("quality").ToLocalChecked() ).As<Uint32>()->Value();
+    context->rotate = obj->Get( Nan::New<String>("rotate").ToLocalChecked() ).As<Int32>()->Value();
+    context->flip = obj->Get( Nan::New<String>("flip").ToLocalChecked() ).As<Uint32>()->Value();
+    context->density = obj->Get( Nan::New<String>("density").ToLocalChecked() ).As<Int32>()->Value();
 
     Local<Value> trimValue = obj->Get( Nan::New<String>("trim").ToLocalChecked() );
     if ( (context->trim = ! trimValue->IsUndefined() && trimValue->BooleanValue()) ) {
-        context->trimFuzz = obj->Get( Nan::New<String>("trimFuzz").ToLocalChecked() )->NumberValue() * (double) (1L << MAGICKCORE_QUANTUM_DEPTH);
+        context->trimFuzz = obj->Get( Nan::New<String>("trimFuzz").ToLocalChecked() ).As<Number>()->Value() * (double) (1L << MAGICKCORE_QUANTUM_DEPTH);
     }
 
     Local<Value> stripValue = obj->Get( Nan::New<String>("strip").ToLocalChecked() );
@@ -627,7 +627,7 @@ NAN_METHOD(Convert) {
     Local<Value> blurValue = obj->Get( Nan::New<String>("blur").ToLocalChecked() );
     context->blur = "";
     if ( ! blurValue->IsUndefined() ) {
-        double blurD = blurValue->NumberValue();
+        double blurD = blurValue.As<Number>()->Value();
         std::ostringstream strs;
         strs << blurD;
         context->blur = strs.str();
@@ -738,9 +738,9 @@ void BuildIdentifyResult(uv_work_t *req, Local<Value> *argv) {
         out->Set(Nan::New<String>("colorspace").ToLocalChecked(), Nan::New<String>(MagickCore::CommandOptionToMnemonic(MagickCore::MagickColorspaceOptions, static_cast<ssize_t>(context->image.colorSpace()))).ToLocalChecked());
 
         Local<Object> out_density = Nan::New<Object>();
-        Magick::Geometry density = context->image.density();
-        out_density->Set(Nan::New<String>("width").ToLocalChecked(), Nan::New<Integer>(static_cast<int>(density.width())));
-        out_density->Set(Nan::New<String>("height").ToLocalChecked(), Nan::New<Integer>(static_cast<int>(density.height())));
+        Magick::Point density = context->image.density();
+        out_density->Set(Nan::New<String>("width").ToLocalChecked(), Nan::New<Integer>(static_cast<int>(density.x())));
+        out_density->Set(Nan::New<String>("height").ToLocalChecked(), Nan::New<Integer>(static_cast<int>(density.y())));
         out->Set(Nan::New<String>("density").ToLocalChecked(), out_density);
 
         Local<Object> out_exif = Nan::New<Object>();
@@ -807,8 +807,8 @@ NAN_METHOD(Identify) {
     context->srcData = Buffer::Data(srcData);
     context->length = Buffer::Length(srcData);
 
-    context->debug          = obj->Get( Nan::New<String>("debug").ToLocalChecked() )->Uint32Value();
-    context->ignoreWarnings = obj->Get( Nan::New<String>("ignoreWarnings").ToLocalChecked() )->Uint32Value();
+    context->debug          = obj->Get( Nan::New<String>("debug").ToLocalChecked() ).As<Uint32>()->Value();
+    context->ignoreWarnings = obj->Get( Nan::New<String>("ignoreWarnings").ToLocalChecked() ).As<Uint32>()->Value();
 
     Local<Value> srcFormatValue = obj->Get( Nan::New<String>("srcFormat").ToLocalChecked() );
     context->srcFormat = !srcFormatValue->IsUndefined() ?
@@ -862,13 +862,13 @@ NAN_METHOD(GetConstPixels) {
         return Nan::ThrowError("getConstPixels()'s 1st argument should have \"srcData\" key with a Buffer instance");
     }
 
-    unsigned int xValue       = obj->Get( Nan::New<String>("x").ToLocalChecked() )->Uint32Value();
-    unsigned int yValue       = obj->Get( Nan::New<String>("y").ToLocalChecked() )->Uint32Value();
-    unsigned int columnsValue = obj->Get( Nan::New<String>("columns").ToLocalChecked() )->Uint32Value();
-    unsigned int rowsValue    = obj->Get( Nan::New<String>("rows").ToLocalChecked() )->Uint32Value();
+    unsigned int xValue       = obj->Get( Nan::New<String>("x").ToLocalChecked() ).As<Uint32>()->Value();
+    unsigned int yValue       = obj->Get( Nan::New<String>("y").ToLocalChecked() ).As<Uint32>()->Value();
+    unsigned int columnsValue = obj->Get( Nan::New<String>("columns").ToLocalChecked() ).As<Uint32>()->Value();
+    unsigned int rowsValue    = obj->Get( Nan::New<String>("rows").ToLocalChecked() ).As<Uint32>()->Value();
 
-    int debug          = obj->Get( Nan::New<String>("debug").ToLocalChecked() )->Uint32Value();
-    int ignoreWarnings = obj->Get( Nan::New<String>("ignoreWarnings").ToLocalChecked() )->Uint32Value();
+    int debug          = obj->Get( Nan::New<String>("debug").ToLocalChecked() ).As<Uint32>()->Value();
+    int ignoreWarnings = obj->Get( Nan::New<String>("ignoreWarnings").ToLocalChecked() ).As<Uint32>()->Value();
     if (debug) printf( "debug: on\n" );
     if (debug) printf( "ignoreWarnings: %d\n", ignoreWarnings );
 
@@ -900,17 +900,17 @@ NAN_METHOD(GetConstPixels) {
         return Nan::ThrowError("x/y/columns/rows values are beyond the image\'s dimensions");
     }
 
-    const Magick::PixelPacket *pixels = image.getConstPixels(xValue, yValue, columnsValue, rowsValue);
+    const MagickCore::PixelPacket *pixels = (MagickCore::PixelPacket*) image.getConstPixels(xValue, yValue, columnsValue, rowsValue);
 
     Local<Object> out = Nan::New<Array>();
     for (unsigned int i=0; i<columnsValue * rowsValue; i++) {
-        Magick::PixelPacket pixel = pixels[ i ];
+        MagickCore::PixelPacket pixel = pixels[ i ];
         Local<Object> color = Nan::New<Object>();
 
         color->Set(Nan::New<String>("red").ToLocalChecked(),     Nan::New<Integer>((unsigned int) pixel.red));
         color->Set(Nan::New<String>("green").ToLocalChecked(),   Nan::New<Integer>((unsigned int) pixel.green));
         color->Set(Nan::New<String>("blue").ToLocalChecked(),    Nan::New<Integer>((unsigned int) pixel.blue));
-        color->Set(Nan::New<String>("opacity").ToLocalChecked(), Nan::New<Integer>((unsigned int) pixel.opacity));
+        color->Set(Nan::New<String>("alpha").ToLocalChecked(), Nan::New<Integer>((unsigned int) pixel.alpha));
 
         out->Set(i, color);
     }
@@ -939,11 +939,11 @@ NAN_METHOD(QuantizeColors) {
         return Nan::ThrowError("quantizeColors()'s 1st argument should have \"srcData\" key with a Buffer instance");
     }
 
-    int colorsCount = obj->Get( Nan::New<String>("colors").ToLocalChecked() )->Uint32Value();
+    int colorsCount = obj->Get( Nan::New<String>("colors").ToLocalChecked() ).As<Uint32>()->Value();
     if (!colorsCount) colorsCount = 5;
 
-    int debug          = obj->Get( Nan::New<String>("debug").ToLocalChecked() )->Uint32Value();
-    int ignoreWarnings = obj->Get( Nan::New<String>("ignoreWarnings").ToLocalChecked() )->Uint32Value();
+    int debug          = obj->Get( Nan::New<String>("debug").ToLocalChecked() ).As<Uint32>()->Value();
+    int ignoreWarnings = obj->Get( Nan::New<String>("ignoreWarnings").ToLocalChecked() ).As<Uint32>()->Value();
     if (debug) printf( "debug: on\n" );
     if (debug) printf( "ignoreWarnings: %d\n", ignoreWarnings );
 
@@ -971,7 +971,7 @@ NAN_METHOD(QuantizeColors) {
     ssize_t rows = 196; ssize_t columns = 196;
 
     if (debug) printf( "resize to: %d, %d\n", (int) rows, (int) columns );
-    Magick::Geometry resizeGeometry( rows, columns, 0, 0, 0, 0 );
+    Magick::Geometry resizeGeometry( rows, columns, 0, 0 );
     image.zoom( resizeGeometry );
 
     if (debug) printf("totalColors before: %d\n", (int) image.totalColors());
@@ -981,14 +981,14 @@ NAN_METHOD(QuantizeColors) {
 
     if (debug) printf("totalColors after: %d\n", (int) image.totalColors());
 
-    Magick::PixelPacket* pixels = image.getPixels(0, 0, image.columns(), image.rows());
+    MagickCore::PixelPacket* pixels = (MagickCore::PixelPacket*) image.getPixels(0, 0, image.columns(), image.rows());
 
-    Magick::PixelPacket* colors = new Magick::PixelPacket[colorsCount]();
+    MagickCore::PixelPacket* colors = new MagickCore::PixelPacket[colorsCount]();
     int index = 0;
 
     for ( ssize_t x = 0; x < rows ; x++ ) {
         for ( ssize_t y = 0; y < columns ; y++ ) {
-            Magick::PixelPacket pixel = pixels[rows * x + y];
+            MagickCore::PixelPacket pixel = pixels[rows * x + y];
 
             bool found = false;
             for(int x = 0; x < colorsCount; x++)
@@ -1121,8 +1121,8 @@ NAN_METHOD(Composite) {
     }
 
     composite_im_ctx* context = new composite_im_ctx();
-    context->debug = obj->Get( Nan::New<String>("debug").ToLocalChecked() )->Uint32Value();
-    context->ignoreWarnings = obj->Get( Nan::New<String>("ignoreWarnings").ToLocalChecked() )->Uint32Value();
+    context->debug = obj->Get( Nan::New<String>("debug").ToLocalChecked() ).As<Uint32>()->Value();
+    context->ignoreWarnings = obj->Get( Nan::New<String>("ignoreWarnings").ToLocalChecked() ).As<Uint32>()->Value();
 
     context->srcData = Buffer::Data(srcData);
     context->length = Buffer::Length(srcData);
